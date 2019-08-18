@@ -164,6 +164,7 @@ void ndi_filter_offscreen_render(void* data, uint32_t cx, uint32_t cy)
 		gs_blend_state_push();
 		gs_blend_function(GS_BLEND_ONE, GS_BLEND_ZERO);
 
+		uint64_t video_ts = os_gettime_ns();
 		obs_source_video_render(target);
 
 		gs_blend_state_pop();
@@ -197,7 +198,7 @@ void ndi_filter_offscreen_render(void* data, uint32_t cx, uint32_t cy)
 
 		struct video_frame output_frame;
 		if (video_output_lock_frame(s->video_output,
-			&output_frame, 1, os_gettime_ns()))
+			&output_frame, 1, video_ts))
 		{
 			if (s->video_data) {
 				gs_stagesurface_unmap(s->stagesurface);
