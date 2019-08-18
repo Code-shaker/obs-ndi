@@ -150,7 +150,7 @@ static video_range_type prop_to_range_type(int index) {
 static obs_source_frame* blank_video_frame()
 {
 	obs_source_frame* frame = obs_source_frame_create(VIDEO_FORMAT_NONE, 0, 0);
-	frame->timestamp = os_gettime_ns();
+	frame->timestamp = (os_gettime_ns() - obs_get_video_frame_time());
 	return frame;
 }
 
@@ -313,13 +313,13 @@ void* ndi_source_poll_audio_video(void* data)
 			obs_audio_frame.speakers =
 				channel_count_to_layout(audio_frame.no_channels);
 
+			uint64_t sample_time;
+
 			switch (s->sync_mode) {
 				case PROP_SYNC_INTERNAL:
 				default:
-					obs_audio_frame.timestamp = os_gettime_ns();
-					obs_audio_frame.timestamp +=
-						((uint64_t)audio_frame.no_samples * 1000000000ULL /
-							(uint64_t)audio_frame.sample_rate);
+					sample_time = (1000000000ULL / (uint64_t)audio_frame.sample_rate);
+					obs_audio_frame.timestamp = (os_gettime_ns() - (audio_frame.no_samples * sample_time));
 					break;
 
 				case PROP_SYNC_NDI_TIMESTAMP:
@@ -376,10 +376,15 @@ void* ndi_source_poll_audio_video(void* data)
 					break;
 			}
 
+			uint64_t frame_time;
+
 			switch (s->sync_mode) {
 				case PROP_SYNC_INTERNAL:
 				default:
-					obs_video_frame.timestamp = os_gettime_ns();
+					frame_time = (uint64_t)(1000000000.0 *
+						((double)video_frame.frame_rate_N / (double)video_frame.frame_rate_D)
+					);
+					obs_video_frame.timestamp = (os_gettime_ns() - frame_time);
 					break;
 
 				case PROP_SYNC_NDI_TIMESTAMP:
